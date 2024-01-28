@@ -1,5 +1,5 @@
 mod image;
-
+use rand::prelude::*;
 
 #[derive(Clone)]
 struct Sphere {
@@ -27,6 +27,34 @@ struct Hit {
     point: Vec<f64>,
     normal: Vec<f64>,
     sphere: Sphere,
+}
+const RNG : ThreadRng = rand::thread_rng();
+fn get_rand() -> f64 {
+    
+    RNG.gen()
+}
+fn gaussian_rand() -> f64 {
+    let num1 = get_rand();
+    let num2 = get_rand();
+    (-2.0 * num1.ln()).sqrt() * (2.0 * std::f64::consts::PI * num2).cos()
+}
+fn get_random_bounce(normal: &Vec<f64>) -> Vec<f64> {
+    let mut bounce = vec![
+        gaussian_rand(),
+        gaussian_rand(),
+        gaussian_rand()
+    ];
+    let size = (bounce[0] * bounce[0] + bounce[1] * bounce[1] + bounce[2] * bounce[2]).sqrt();
+    bounce[0] /= size;
+    bounce[1] /= size;
+    bounce[2] /= size;
+    let dot_product = bounce[0] * normal[0] + bounce[1] * normal[1] + bounce[2] * normal[2];
+    if dot_product < 0.0 {
+        bounce[0] *= -1.0;
+        bounce[1] *= -1.0;
+        bounce[2] *= -1.0;
+    }
+    bounce
 }
 impl Ray {
     fn reset_direction(&mut self, camera: &Camera, x: u32, y: u32) {
@@ -132,8 +160,10 @@ fn generate_scene() -> Vec<Sphere> {
 }
 fn main() {
     let spheres = generate_scene();
-    let width = 200;
-    let height = 100;
+    let width = 500;
+    let height = 400;
+    let bounces = 10;
+    let samples_per_pixel = 1000;
     let mut img = image::Image::blank(width, height);
     let camera = Camera {
         origin: vec![0.0, 0.0, -50.0],
@@ -150,26 +180,64 @@ fn main() {
     for y in 0..height {
         for x in 0..width {
             let y_index = height - y - 1;
-            ray.reset_direction(&camera, x, y_index);
-            let mut closest_hit = Hit {
-                distance: -1.0,
-                point: vec![0.0, 0.0, 0.0],
-                normal: vec![0.0, 0.0, 0.0],
-                sphere: spheres[0].clone(),
-            };
-            for sphere in &spheres {
-                let hit = ray.get_collision(&sphere);
-                if hit.distance > 0.0 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
-                    //let color = (hit.normal[0] * 255.0) as u8;
-                    closest_hit = hit;
+            let mut total_light = vec![0.0, 0.0, 0.0];
+            let mut hit = false;
+            for i in 0..samples_per_pixel {
+                ray.reset_direction(&camera, x, y_index);
+                let mut ray_color = vec![1.0, 1.0, 1.0];
+                let mut accumulated_light = vec![0.0, 0.0, 0.0];
+                
+                if i > 0 && hit == false {
+                    break;
                 }
+                for _ in 0..bounces {
+                    let mut closest_hit = Hit {
+                        distance: -1.0,
+                        point: vec![0.0, 0.0, 0.0],
+                        normal: vec![0.0, 0.0, 0.0],
+                        sphere: spheres[0].clone(),
+                    };
+                    for sphere in &spheres {
+                        let hit = ray.get_collision(&sphere);
+                        if hit.distance > 0.0 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
+                            //let color = (hit.normal[0] * 255.0) as u8;
+                            closest_hit = hit;
+                        }
+                    }
+                    if closest_hit.distance < 0.0 {
+                        break;
+                    }
+                    hit = true;
+                    ray.direction = get_random_bounce(&closest_hit.normal);
+                    ray.origin = closest_hit.point.clone();
+                    let light_emitted = vec![
+                        closest_hit.sphere.color[0] * closest_hit.sphere.light,
+                        closest_hit.sphere.color[1] * closest_hit.sphere.light,
+                        closest_hit.sphere.color[2] * closest_hit.sphere.light,
+                    ];
+                    accumulated_light = vec![
+                        accumulated_light[0] + light_emitted[0] * ray_color[0],
+                        accumulated_light[1] + light_emitted[1] * ray_color[1],
+                        accumulated_light[2] + light_emitted[2] * ray_color[2],
+                    ];
+                    ray_color = vec![
+                        ray_color[0] * closest_hit.sphere.color[0],
+                        ray_color[1] * closest_hit.sphere.color[1],
+                        ray_color[2] * closest_hit.sphere.color[2],
+                    ];
+                }
+                total_light[0] += accumulated_light[0];
+                total_light[1] += accumulated_light[1];
+                total_light[2] += accumulated_light[2];
             }
-            if closest_hit.distance < 0.0 {
-                continue;
+            
+            img.write_to_pixel(x, y, [(total_light[0] * 256.0 / samples_per_pixel as f64) as u8, (total_light[1] * 256.0 / samples_per_pixel as f64) as u8, (total_light[2] * 256.0 / samples_per_pixel as f64) as u8, 255]);
+            if total_light == vec![0.0, 0.0, 0.0] && !hit{
+                img.write_to_pixel(x, y, [135, 206, 235, 255]);
             }
-            img.write_to_pixel(x, y, [(closest_hit.sphere.color[0] * 256.0) as u8, (closest_hit.sphere.color[1] * 256.0) as u8, (closest_hit.sphere.color[2] * 256.0) as u8, 255]);
+            
         }
+        image::Image::save_to_file(&mut img, "test.png");
     }
-    image::Image::save_to_file(&mut img, "test.png");
     
 }
