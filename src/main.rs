@@ -160,10 +160,10 @@ fn generate_scene() -> Vec<Sphere> {
 }
 fn main() {
     let spheres = generate_scene();
-    let width = 500;
-    let height = 400;
+    let width = 100;
+    let height = 50;
     let bounces = 10;
-    let samples_per_pixel = 1000;
+    let samples_per_pixel = 500;
     let mut img = image::Image::blank(width, height);
     let camera = Camera {
         origin: vec![0.0, 0.0, -50.0],
@@ -237,7 +237,7 @@ fn main() {
             }
             
         }
-        image::Image::save_to_file(&mut img, "test.png");
+        image::Image::save_to_file(&mut img, "test2.png");
     }
     
 }
