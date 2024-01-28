@@ -28,10 +28,10 @@ struct Hit {
     normal: Vec<f64>,
     sphere: Sphere,
 }
-const RNG : ThreadRng = rand::thread_rng();
+
 fn get_rand() -> f64 {
-    
-    RNG.gen()
+    let mut rng = rand::thread_rng();
+    rng.gen()
 }
 fn gaussian_rand() -> f64 {
     let num1 = get_rand();
