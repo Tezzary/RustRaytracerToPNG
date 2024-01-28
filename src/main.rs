@@ -199,7 +199,7 @@ fn main() {
                     };
                     for sphere in &spheres {
                         let hit = ray.get_collision(&sphere);
-                        if hit.distance > 0.0 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
+                        if hit.distance > 0.00001 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
                             //let color = (hit.normal[0] * 255.0) as u8;
                             closest_hit = hit;
                         }
