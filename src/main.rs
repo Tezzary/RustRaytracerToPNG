@@ -1,6 +1,7 @@
 mod image;
 use rand::prelude::*;
-
+use std::thread;
+use std::sync::mpsc;
 #[derive(Clone)]
 struct Sphere {
     center: Vec<f64>,
@@ -8,7 +9,7 @@ struct Sphere {
     color: Vec<f64>,
     light: f64,
 }
-
+#[derive(Clone)]
 struct Camera {
     origin: Vec<f64>,
     yaw: f64,
@@ -27,6 +28,12 @@ struct Hit {
     point: Vec<f64>,
     normal: Vec<f64>,
     sphere: Sphere,
+}
+
+struct Cube {
+    pixels: Vec<Vec<u8>>,
+    x_index: u32,
+    y_index: u32,
 }
 
 fn get_rand() -> f64 {
@@ -145,7 +152,7 @@ fn generate_scene() -> Vec<Sphere> {
         light: 0.0,
     });
     spheres.push(Sphere {
-        center: vec![30.0, 0.0, 80.0],
+        center: vec![30.0, 0.0, 100.0],
         radius: 50.0,
         color: vec![1.0, 1.0, 1.0],
         light: 5.0,
@@ -154,36 +161,32 @@ fn generate_scene() -> Vec<Sphere> {
         center: vec![-30.0, 10.0, -10.0],
         radius: 5.0,
         color: vec![1.0, 1.0, 1.0],
-        light: 10.0,
+        light: 5.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, -8.0, -10.0],
+        radius: 3.5,
+        color: vec![1.0, 1.0, 1.0],
+        light: 5.0,
     });
     return spheres;
 }
-fn main() {
-    let spheres = generate_scene();
-    let width = 100;
-    let height = 50;
-    let bounces = 10;
-    let samples_per_pixel = 500;
-    let mut img = image::Image::blank(width, height);
-    let camera = Camera {
-        origin: vec![0.0, 0.0, -50.0],
-        yaw: 0.0,
-        pitch: 0.0,
-        fov: 90.0 * std::f64::consts::PI / 180.0,
-        width: width,
-        height: height,
-    };
+
+fn ray_trace_cube(x_index: u32, y_index: u32, width: u32, height: u32, camera: Camera, spheres: Vec<Sphere>, samples_per_pixel: u32, bounces: u32) -> Cube{
     let mut ray = Ray {
         origin: camera.origin.clone(),
         direction: vec![0.0, 0.0, 0.0],
     };
+
+    let mut pixels: Vec<Vec<u8>> = Vec::with_capacity((width * height) as usize);
     for y in 0..height {
         for x in 0..width {
-            let y_index = height - y - 1;
+            let y_index = height * y_index + y;
+            let x_index = width * x_index + x;
             let mut total_light = vec![0.0, 0.0, 0.0];
             let mut hit = false;
             for i in 0..samples_per_pixel {
-                ray.reset_direction(&camera, x, y_index);
+                ray.reset_direction(&camera, x_index, y_index);
                 let mut ray_color = vec![1.0, 1.0, 1.0];
                 let mut accumulated_light = vec![0.0, 0.0, 0.0];
                 
@@ -230,14 +233,96 @@ fn main() {
                 total_light[1] += accumulated_light[1];
                 total_light[2] += accumulated_light[2];
             }
-            
-            img.write_to_pixel(x, y, [(total_light[0] * 256.0 / samples_per_pixel as f64) as u8, (total_light[1] * 256.0 / samples_per_pixel as f64) as u8, (total_light[2] * 256.0 / samples_per_pixel as f64) as u8, 255]);
+            total_light[0] = total_light[0] * 256.0 / samples_per_pixel as f64;
+            total_light[1] = total_light[1] * 256.0 / samples_per_pixel as f64;
+            total_light[2] = total_light[2] * 256.0 / samples_per_pixel as f64;
             if total_light == vec![0.0, 0.0, 0.0] && !hit{
-                img.write_to_pixel(x, y, [135, 206, 235, 255]);
+                total_light = vec![5.0, 35.0, 84.0];
             }
-            
+            let formatted_light = vec![total_light[0] as u8, total_light[1] as u8, total_light[2] as u8];
+            pixels.push(formatted_light);
         }
-        image::Image::save_to_file(&mut img, "test2.png");
     }
+    Cube {
+        pixels: pixels,
+        x_index: x_index,
+        y_index: y_index,
+    }
+            
+}
+
+
+fn main() {
+    let spheres = generate_scene();
+    let width = 600;
+    let height = 300;
+    let cube_width = 5;
+    let cube_height = 5;
+    let x_cubes = width / cube_width;
+    let y_cubes = height / cube_height;
     
+    let threads = 18;
+    let bounces = 10;
+    let samples_per_pixel = 16384;
+    let mut img = image::Image::blank(width, height);
+    let camera = Camera {
+        origin: vec![0.0, 0.0, -50.0],
+        yaw: 0.0,
+        pitch: 0.0,
+        fov: 90.0 * std::f64::consts::PI / 180.0,
+        width: width,
+        height: height,
+    };
+
+    
+
+    let (tx, rx) = mpsc::channel();
+
+    for i in 0..threads {
+        
+        let camera = camera.clone();
+        let spheres = spheres.clone();
+        let tx = tx.clone();
+        
+        thread::spawn(move || {
+            for j in 0..(x_cubes * y_cubes / threads) {
+                let cube_number = (j * threads) + i;
+                if cube_number >= x_cubes * y_cubes {
+                    break;
+                }
+                let x_index = cube_number % x_cubes;
+                let y_index = cube_number / x_cubes;
+
+                let camera = camera.clone();
+                let spheres = spheres.clone();
+                let tx = tx.clone();
+
+                let cube = ray_trace_cube(x_index, y_index, cube_width, cube_height, camera, spheres, samples_per_pixel, bounces);
+
+                tx.send(cube).unwrap();
+            }
+
+
+        });
+    }
+    let mut count = 0;
+    for cube in rx {
+        for y in 0..cube_height {
+            for x in 0..cube_width {
+                
+                img.write_to_pixel(x + cube.x_index * cube_width, height - (y + cube.y_index * cube_height) - 1, [cube.pixels[(y * cube_width + x) as usize][0], cube.pixels[(y * cube_width + x) as usize][1], cube.pixels[(y * cube_width + x) as usize][2], 255]);
+            }
+        }
+        
+
+        println!("{} {}", cube.x_index, cube.y_index);
+        count += 1;
+        if count % threads == 0 {
+            image::Image::save_to_file(&mut img, "test6.png");
+        }
+        if count == x_cubes * y_cubes {
+            image::Image::save_to_file(&mut img, "test6.png");
+            break;
+        }
+    }
 }
