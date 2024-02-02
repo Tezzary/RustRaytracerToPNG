@@ -74,6 +74,50 @@ impl Ray {
             f64::cos(camera.yaw + ((f_x + 0.5) / camera.width as f64) * camera.fov - camera.fov / 2.0),
         ];
     }
+    fn improved_get_collision(&mut self, sphere: &Sphere) -> Hit{
+        let delta_position = vec![
+            self.origin[0] - sphere.center[0],
+            self.origin[1] - sphere.center[1],
+            self.origin[2] - sphere.center[2],
+        ];
+        let a = self.direction[0] * self.direction[0] + self.direction[1] * self.direction[1] + self.direction[2] * self.direction[2];
+        let b = 2.0 * (delta_position[0] * self.direction[0] + delta_position[1] * self.direction[1] + delta_position[2] * self.direction[2]);
+        let c = delta_position[0] * delta_position[0] + delta_position[1] * delta_position[1] + delta_position[2] * delta_position[2] - sphere.radius * sphere.radius;
+        let discriminant = b * b - 4.0 * a * c;
+        if discriminant < 0.0 {
+            return Hit {
+                distance: -1.0,
+                point: vec![0.0, 0.0, 0.0],
+                normal: vec![0.0, 0.0, 0.0],
+                sphere: sphere.clone(),
+            };
+        }
+        let t = (-b - discriminant.sqrt()) / (2.0 * a);
+        if t < 0.0 {
+            return Hit {
+                distance: -1.0,
+                point: vec![0.0, 0.0, 0.0],
+                normal: vec![0.0, 0.0, 0.0],
+                sphere: sphere.clone(),
+            };
+        }
+        let point = vec![
+            self.origin[0] + self.direction[0] * t,
+            self.origin[1] + self.direction[1] * t,
+            self.origin[2] + self.direction[2] * t,
+        ];
+        let normal = vec![
+            (point[0] - sphere.center[0]) / sphere.radius,
+            (point[1] - sphere.center[1]) / sphere.radius,
+            (point[2] - sphere.center[2]) / sphere.radius,
+        ];
+        Hit {
+            distance: t,
+            point: point,
+            normal: normal,
+            sphere: sphere.clone(),
+        }
+    }
     fn get_collision(&mut self, sphere: &Sphere) -> Hit {
         let delta_position = vec![
             sphere.center[0] - self.origin[0],
@@ -82,7 +126,7 @@ impl Ray {
         ];
 
         let dot_product = delta_position[0] * self.direction[0] + delta_position[1] * self.direction[1] + delta_position[2] * self.direction[2];
-        if dot_product < 0.0 {
+        if dot_product < 0.00001 {
             return Hit {
                 distance: -1.0,
                 point: vec![0.0, 0.0, 0.0],
@@ -105,11 +149,20 @@ impl Ray {
                 sphere: sphere.clone(),
             };
         }
-        let offset = ((sphere.radius.powf(2.0) - distance.powf(2.0)).abs()).sqrt();
+        let offset = (sphere.radius.powf(2.0) - distance.powf(2.0)).sqrt();
+
+        if dot_product - offset < 0.00001 {
+            return Hit {
+                distance: -1.0,
+                point: vec![0.0, 0.0, 0.0],
+                normal: vec![0.0, 0.0, 0.0],
+                sphere: sphere.clone(),
+            };
+        }
         let point = vec![
-            centre_point[0] - self.direction[0] * offset,
-            centre_point[1] - self.direction[1] * offset,
-            centre_point[2] - self.direction[2] * offset,
+            self.origin[0] + self.direction[0] * (dot_product - offset),
+            self.origin[1] + self.direction[1] * (dot_product - offset),
+            self.origin[2] + self.direction[2] * (dot_product - offset),
         ];
         let normal = vec![
             (point[0] - sphere.center[0]) / sphere.radius,
@@ -146,7 +199,7 @@ fn generate_scene() -> Vec<Sphere> {
         });
     }
     spheres.push(Sphere {
-        center: vec![0.0, -1008.0, 10.0],
+        center: vec![0.0, -1008.0, 0.0],
         radius: 1000.0,
         color: vec![0.5, 0.5, 0.0],
         light: 0.0,
@@ -164,8 +217,8 @@ fn generate_scene() -> Vec<Sphere> {
         light: 5.0,
     });
     spheres.push(Sphere {
-        center: vec![0.0, -8.0, -10.0],
-        radius: 3.5,
+        center: vec![0.0, -12.0, -15.0],
+        radius: 5.0,
         color: vec![1.0, 1.0, 1.0],
         light: 5.0,
     });
@@ -201,8 +254,8 @@ fn ray_trace_cube(x_index: u32, y_index: u32, width: u32, height: u32, camera: C
                         sphere: spheres[0].clone(),
                     };
                     for sphere in &spheres {
-                        let hit = ray.get_collision(&sphere);
-                        if hit.distance > 0.00001 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
+                        let hit = ray.improved_get_collision(&sphere);
+                        if hit.distance > 0.0 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
                             //let color = (hit.normal[0] * 255.0) as u8;
                             closest_hit = hit;
                         }
@@ -254,16 +307,16 @@ fn ray_trace_cube(x_index: u32, y_index: u32, width: u32, height: u32, camera: C
 
 fn main() {
     let spheres = generate_scene();
-    let width = 400;
-    let height = 200;
-    let cube_width = 5;
-    let cube_height = 5;
+    let width = 1920;
+    let height = 1080;
+    let cube_width = 10;
+    let cube_height = 10;
     let x_cubes = width / cube_width;
     let y_cubes = height / cube_height;
     
-    let threads = 6;
-    let bounces = 10;
-    let samples_per_pixel = 2048;
+    let threads = 20;
+    let bounces = 100;
+    let samples_per_pixel = 1000;
     let mut img = image::Image::blank(width, height);
     let camera = Camera {
         origin: vec![0.0, 0.0, -50.0],
@@ -274,6 +327,9 @@ fn main() {
         height: height,
     };
 
+    let cube = ray_trace_cube(240, 0, 1, 1, camera.clone(), spheres.clone(), samples_per_pixel, bounces);
+
+    print!("{} {} {}", cube.pixels[0][0], cube.pixels[0][1], cube.pixels[0][2]);
     
 
     let (tx, rx) = mpsc::channel();
@@ -317,11 +373,11 @@ fn main() {
 
         println!("{} {}", cube.x_index, cube.y_index);
         count += 1;
-        if count % threads == 0 {
-            image::Image::save_to_file(&mut img, "test7.png");
+        if count % (threads * 1) == 0 {
+            image::Image::save_to_file(&mut img, "test8.png");
         }
         if count == x_cubes * y_cubes {
-            image::Image::save_to_file(&mut img, "test7.png");
+            image::Image::save_to_file(&mut img, "test8.png");
             break;
         }
     }
