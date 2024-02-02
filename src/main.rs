@@ -254,16 +254,16 @@ fn ray_trace_cube(x_index: u32, y_index: u32, width: u32, height: u32, camera: C
 
 fn main() {
     let spheres = generate_scene();
-    let width = 600;
-    let height = 300;
+    let width = 400;
+    let height = 200;
     let cube_width = 5;
     let cube_height = 5;
     let x_cubes = width / cube_width;
     let y_cubes = height / cube_height;
     
-    let threads = 18;
+    let threads = 6;
     let bounces = 10;
-    let samples_per_pixel = 16384;
+    let samples_per_pixel = 2048;
     let mut img = image::Image::blank(width, height);
     let camera = Camera {
         origin: vec![0.0, 0.0, -50.0],
@@ -318,10 +318,10 @@ fn main() {
         println!("{} {}", cube.x_index, cube.y_index);
         count += 1;
         if count % threads == 0 {
-            image::Image::save_to_file(&mut img, "test6.png");
+            image::Image::save_to_file(&mut img, "test7.png");
         }
         if count == x_cubes * y_cubes {
-            image::Image::save_to_file(&mut img, "test6.png");
+            image::Image::save_to_file(&mut img, "test7.png");
             break;
         }
     }
