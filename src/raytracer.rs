@@ -1,10 +1,12 @@
 
+use rand::prelude::*;
+
 struct Ray {
     origin: Vec<f64>,
     direction: Vec<f64>,
 }
 #[derive(Clone)]
-struct Sphere {
+pub struct Sphere {
     center: Vec<f64>,
     radius: f64,
     color: Vec<f64>,
@@ -12,7 +14,7 @@ struct Sphere {
     smoothness: f64,
 }
 #[derive(Clone)]
-struct Camera {
+pub struct Camera {
     origin: Vec<f64>,
     yaw: f64,
     pitch: f64,
@@ -22,7 +24,7 @@ struct Camera {
 }
 
 
-struct Hit {
+pub struct Hit {
     distance: f64,
     point: Vec<f64>,
     normal: Vec<f64>,
@@ -141,7 +143,7 @@ impl Ray {
     }
 }
 
-fn ray_trace_pixel(x_index: u32, y_index: u32, width: u32, height: u32, camera: Camera, spheres: Vec<Sphere>, samples_per_pixel: u32, bounces: u32) -> Vec<u8> {
+pub fn ray_trace_pixel(x_index: u32, y_index: u32, camera: &Camera, spheres: &Vec<Sphere>, samples_per_pixel: u32, bounces: u32) -> Vec<u8> {
     
     let mut total_light = vec![0.0, 0.0, 0.0];
     let mut hit = false;
@@ -164,7 +166,7 @@ fn ray_trace_pixel(x_index: u32, y_index: u32, width: u32, height: u32, camera: 
                 normal: vec![0.0, 0.0, 0.0],
                 sphere: spheres[0].clone(),
             };
-            for sphere in &spheres {
+            for sphere in spheres {
                 let hit = ray.get_collision(&sphere);
                 if hit.distance > 0.0 && (hit.distance < closest_hit.distance || closest_hit.distance < 0.0) {
                     //let color = (hit.normal[0] * 255.0) as u8;
@@ -219,4 +221,98 @@ pub fn new_camera(width: u32, height: u32, position: Vec<f64>) -> Camera {
         width: width,
         height: height,
     }
+}
+pub fn generate_scene() -> Vec<Sphere> {
+    let colors: Vec<Vec<f64>> = vec![
+        vec![1.0, 0.0, 0.0],
+        vec![1.0, 1.0, 1.0],
+        vec![1.0, 1.0, 1.0],
+        vec![1.0, 1.0, 0.0],
+        vec![1.0, 0.0, 1.0]
+    ];
+    let mut spheres = Vec::new();
+    for i in 0..5 {
+        spheres.push(Sphere {
+            center: vec![i as f64 * 18.0 - 36.0, 0.0, 0.0],
+            radius: 8.0,
+            color: colors[i].clone(),
+            light: 0.0,
+            smoothness: 0.0,
+        });
+    }
+    spheres[2].smoothness = 1.0;
+    spheres[1].smoothness = 1.0;
+    spheres[0].smoothness = 0.5;
+    spheres.push(Sphere {
+        center: vec![0.0, -1008.0, 0.0],
+        radius: 1000.0,
+        color: vec![0.5, 0.5, 0.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![30.0, 0.0, 100.0],
+        radius: 50.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 2.0,
+        smoothness: 0.0,
+    }); 
+    /* 
+    spheres.push(Sphere {
+        center: vec![-30.0, 10.0, -10.0],
+        radius: 5.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 1.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, -12.0, -15.0],
+        radius: 5.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 1.0,
+        smoothness: 0.0,
+    });*/
+    spheres.push(Sphere {
+        center: vec![-10150.0, 0.0, 0.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![10150.0, 0.0, 0.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, 0.0, -10150.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, 0.0, 10150.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, -10150.0, 0.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    spheres.push(Sphere {
+        center: vec![0.0, 10150.0, 0.0],
+        radius: 10000.0,
+        color: vec![1.0, 1.0, 1.0],
+        light: 0.0,
+        smoothness: 0.0,
+    });
+    return spheres;
 }
