@@ -33,16 +33,16 @@ fn ray_trace_cube(x_index: u32, y_index: u32, width: u32, height: u32, camera: &
 
 fn main() {
     let spheres = raytracer::generate_scene();
-    let width = 1920;
-    let height = 1080;
-    let cube_width = 10;
-    let cube_height = 10;
+    let width = 400;
+    let height = 200;
+    let cube_width = 8;
+    let cube_height = 8;
     let x_cubes = width / cube_width;
     let y_cubes = height / cube_height;
     
-    let threads = 20;
-    let bounces = 6;
-    let samples_per_pixel = 512;
+    let threads = 7;
+    let bounces = 10;
+    let samples_per_pixel = 256;
     let mut img = image::Image::blank(width, height);
     let camera = raytracer::new_camera(width, height, vec![0.0, 0.0, -50.0]);
 
@@ -94,10 +94,10 @@ fn main() {
             //clear terminal
             print!("\x1B[2J\x1B[1;1H");
             println!("{}% done, {} seconds elapsed, {} seconds remaining", (count as f64 / (x_cubes * y_cubes) as f64 * 100.0).round() as u64, elapsed.as_secs(), (eta - (current_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()) as f64).round() as u64);
-            image::Image::save_to_file(&mut img, "test12.png");
+            image::Image::save_to_file(&mut img, "test14.png");
         }
         if count == x_cubes * y_cubes {
-            image::Image::save_to_file(&mut img, "test12.png");
+            image::Image::save_to_file(&mut img, "test14.png");
             break;
         }
     }

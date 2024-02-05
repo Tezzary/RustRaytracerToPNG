@@ -225,10 +225,10 @@ pub fn new_camera(width: u32, height: u32, position: Vec<f64>) -> Camera {
 pub fn generate_scene() -> Vec<Sphere> {
     let colors: Vec<Vec<f64>> = vec![
         vec![1.0, 0.0, 0.0],
-        vec![1.0, 1.0, 1.0],
-        vec![1.0, 1.0, 1.0],
-        vec![1.0, 1.0, 0.0],
-        vec![1.0, 0.0, 1.0]
+        vec![1.0, 0.0, 1.0],
+        vec![0.0, 0.0, 1.0],
+        vec![0.0, 1.0, 1.0],
+        vec![0.0, 1.0, 0.0]
     ];
     let mut spheres = Vec::new();
     for i in 0..5 {
@@ -240,13 +240,15 @@ pub fn generate_scene() -> Vec<Sphere> {
             smoothness: 0.0,
         });
     }
-    spheres[2].smoothness = 1.0;
-    spheres[1].smoothness = 1.0;
-    spheres[0].smoothness = 0.5;
+    spheres[4].smoothness = 0.9;
+    spheres[3].smoothness = 0.9;
+    spheres[2].smoothness = 0.9;
+    spheres[1].smoothness = 0.9;
+    spheres[0].smoothness = 0.9;
     spheres.push(Sphere {
         center: vec![0.0, -1008.0, 0.0],
         radius: 1000.0,
-        color: vec![0.5, 0.5, 0.0],
+        color: vec![0.3, 0.3, 0.3],
         light: 0.0,
         smoothness: 0.0,
     });
@@ -255,7 +257,7 @@ pub fn generate_scene() -> Vec<Sphere> {
         radius: 50.0,
         color: vec![1.0, 1.0, 1.0],
         light: 2.0,
-        smoothness: 0.0,
+        smoothness: 1.0,
     }); 
     /* 
     spheres.push(Sphere {
@@ -275,42 +277,42 @@ pub fn generate_scene() -> Vec<Sphere> {
     spheres.push(Sphere {
         center: vec![-10150.0, 0.0, 0.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
     spheres.push(Sphere {
         center: vec![10150.0, 0.0, 0.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
     spheres.push(Sphere {
         center: vec![0.0, 0.0, -10150.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
     spheres.push(Sphere {
         center: vec![0.0, 0.0, 10150.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
     spheres.push(Sphere {
         center: vec![0.0, -10150.0, 0.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
     spheres.push(Sphere {
         center: vec![0.0, 10150.0, 0.0],
         radius: 10000.0,
-        color: vec![1.0, 1.0, 1.0],
+        color: vec![1.0, 1.0, 0.0],
         light: 0.0,
         smoothness: 0.0,
     });
