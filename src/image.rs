@@ -28,11 +28,22 @@ impl Image {
     }
 
     pub fn save_to_file(&mut self, filename: &str) {
-        let mut file = std::fs::File::create(filename).unwrap();
+        let mut file = std::fs::File::create(format!("images/{}.png", filename)).unwrap();
         let mut encoder = png::Encoder::new(&mut file, self.width, self.height);
         encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header().unwrap();
         writer.write_image_data(&self.bytes).unwrap();
+    }
+    
+}
+pub fn create_unused_filename() -> String {
+    let mut index = 0;
+    loop {
+        let filename = format!("image_{}", index);
+        if !std::path::Path::new(&format!("images/{}.png", filename)).exists() {
+            return filename;
+        }
+        index += 1;
     }
 }

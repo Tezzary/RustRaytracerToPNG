@@ -379,10 +379,10 @@ pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sp
     let mut count = 0;
     let start_time = SystemTime::now();
 
-    let filename = "test15.png";
+    let filename = image::create_unused_filename();
     for cube in rx {
         for y in 0..cube_height {
-            for x in 0..cube_width {
+            for x in 0..cube_width { 
                 
                 img.write_to_pixel(x + cube.x_index * cube_width, height - (y + cube.y_index * cube_height) - 1, [cube.pixels[(y * cube_width + x) as usize][0], cube.pixels[(y * cube_width + x) as usize][1], cube.pixels[(y * cube_width + x) as usize][2], 255]);
             }
@@ -395,10 +395,10 @@ pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sp
             //clear terminal
             print!("\x1B[2J\x1B[1;1H");
             println!("{}% done, {} seconds elapsed, {} seconds remaining", (count as f64 / (x_cubes * y_cubes) as f64 * 100.0).round() as u64, elapsed.as_secs(), (eta - (current_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()) as f64).round() as u64);
-            image::Image::save_to_file(&mut img, filename);
+            img.save_to_file(&filename);
         }
         if count == x_cubes * y_cubes {
-            image::Image::save_to_file(&mut img, filename);
+            img.save_to_file(&filename);
             break;
         }
     }
