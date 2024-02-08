@@ -40,7 +40,7 @@ impl Image {
 pub fn create_unused_filename() -> String {
     let mut index = 0;
     loop {
-        let filename = format!("image_{}", index);
+        let filename = format!("{}", index);
         if !std::path::Path::new(&format!("images/{}.png", filename)).exists() {
             return filename;
         }

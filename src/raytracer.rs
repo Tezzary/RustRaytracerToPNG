@@ -338,7 +338,7 @@ pub fn generate_scene() -> Vec<Sphere> {
     return spheres;
 }
 
-pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sphere>, samples_per_pixel: u32, bounces: u32, threads: u32) -> String {
+pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sphere>, samples_per_pixel: u32, bounces: u32, threads: u32, filename: String) {
     
     let cube_width = 10;
     let cube_height = 10;
@@ -378,8 +378,6 @@ pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sp
     }
     let mut count = 0;
     let start_time = SystemTime::now();
-
-    let filename = image::create_unused_filename();
     for cube in rx {
         for y in 0..cube_height {
             for x in 0..cube_width { 
@@ -393,8 +391,8 @@ pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sp
             let elapsed = current_time.duration_since(start_time).unwrap();
             let eta = elapsed.as_secs() as f64 * (x_cubes * y_cubes) as f64 / count as f64 + (start_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as f64);
             //clear terminal
-            print!("\x1B[2J\x1B[1;1H");
-            println!("{}% done, {} seconds elapsed, {} seconds remaining", (count as f64 / (x_cubes * y_cubes) as f64 * 100.0).round() as u64, elapsed.as_secs(), (eta - (current_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()) as f64).round() as u64);
+            //print!("\x1B[2J\x1B[1;1H");
+            //println!("{}% done, {} seconds elapsed, {} seconds remaining", (count as f64 / (x_cubes * y_cubes) as f64 * 100.0).round() as u64, elapsed.as_secs(), (eta - (current_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()) as f64).round() as u64);
             img.save_to_file(&filename);
         }
         if count == x_cubes * y_cubes {
@@ -402,5 +400,4 @@ pub fn raytrace_image(width: u32, height: u32, camera: &Camera, spheres: &Vec<Sp
             break;
         }
     }
-    filename.to_string()
 }
